@@ -28,15 +28,8 @@ print_help()
   printf("bin2symbl --addrs=<filename> --names=<filename> --output=<filename>\n\n");
 
 
-  printf("--input=<filename>    : A file containg both name and address information\n");
-  printf("--addrs=<filename>    : A file containing address information\n");
-  printf("--names=<filename>    : A file containing name information\n\n");
-
-  printf("--output=<filename>   : The output file\n\n\n");
-
-
-  printf("Please do not use --input with either --addrs or --names\n");
-  printf("    this is not intended behaviour and the addrs/names flag will be ignored.\n");
+  printf("--input=<filename>  : A file containg both name and address information\n");
+  printf("--output=<filename> : The output file\n");
   printf("---- bin2symbl Help Information ----\n");
 }
 
@@ -224,6 +217,12 @@ main(
   Object  *object  = NULL;
   uint32_t size    = 0x00;
   char     buffer[10000];
+
+  if (argc < 3)
+  {
+    print_help();
+    goto cleanup;
+  }
 
   for (iter = 0; iter < argc; iter++)
   {
