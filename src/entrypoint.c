@@ -14,10 +14,10 @@
     instead this is simply used to know the size
     of the structure when iterating it.
 */
-enum addressStructureVersion
+enum AddrVersion
 {
-  addressStructureVersion1 = 0x08,
-  addressStructureVersion2 = 0x0C,
+  AddrV1 = 0x08,
+  AddrV2 = 0x0C,
 };
 
 void
@@ -37,7 +37,6 @@ typedef struct Object
 {
   uint32_t rva;
   uint32_t size;
-  
   uint32_t length;
   char    *name;
 } Object;
@@ -48,8 +47,6 @@ typedef struct Object
   NOTE: the modules list can expand infinitely with
           no real indicator of its existence, as a result
           this is not a guaranteed to be 100% accurate.
-
-  @param f - A pointer to the start of a valid bin file
 */
 _Bool
 bin_sections_module_exists(
@@ -262,8 +259,8 @@ parse:
   if (TRUE == modules)
     addrs = bin_sections_module_end(file.memptr);
 
-  names   = bin_sections_address_end(addrs, (TRUE == modules ? addressStructureVersion2 : addressStructureVersion1));
-  entries = *((uint32_t *)(addrs));
+  names   = bin_sections_address_end(addrs, (TRUE == modules ? AddrV2 : AddrV1));
+  entries = bin_sections_address_count(addrs);
   object  = calloc(entries, sizeof(*object));
   addrs  += 0x04;
   names  += 0x04;
@@ -280,32 +277,20 @@ parse:
     if (TRUE == modules)
       addrs += 0x04;
 
-    names += *((uint32_t *)(names));
+    names += object[iter].length;
     names += 0x04;
   }
 
   for (iter = 0; iter < entries; iter++)
   {
-    // printf("Addr: 0x%.8x - %s\n", object[iter].rva, object[iter].name);
     size = sprintf(buffer, "0x%.8x - %s\n", object[iter].rva, object[iter].name);
     WriteFile(write.file, buffer, size, NULL, NULL);
-
-    // printf("Addr   : 0x%.8x\n", *((uint32_t *)(addrs)));
-    
-    // addrs += 0x08;
-    // if (TRUE == modules)
-    //   addrs += 0x04;
-
-    // printf("Name   : %s\n", (char *)(names + 0x04));
-    // printf("Names: 0x%.8x\n", *((uint32_t *)(names)));
-    // names += *((uint32_t *)(names));
-    // names += 0x04;
-
-    // printf("Names: 0x%.8x\n", names - file.memptr);
-    // printf("Addrs: 0x%.8x\n", addrs - file.memptr);
   }
 
 cleanup:
+  if (NULL != object)
+    free(object);
+
   if (NULL != file.file)
     file_close(&file);
 
@@ -315,99 +300,3 @@ cleanup:
 end:
   return 0;
 }
-
-// struct Object
-// {
-//   uint32_t rva;
-//   uint32_t length;
-// };
-
-// struct ObjectName
-// {
-//   uint32_t length;
-//   uint8_t *data;
-// };
-
-
-// void
-// get_names(
-//   struct ObjectName *names,
-//   void              *memory,
-//   uint32_t           count)
-// {
-//   uint32_t iter = 0;
-
-//   if (NULL == names ||
-//       NULL == memory ||
-//       0    == count)
-//     return;
-  
-//   for (iter = 0; iter < count; iter++)
-//   {
-//     names[iter].length = *((uint32_t *)(memory));
-//     names[iter].data   = memory + 4;
-
-//     memory += 4;
-//     memory += names[iter].length;
-//   }
-// }
-
-// int
-// main(int    argc,
-//      char **argv)
-// {
-//   struct file in  = { 0 };
-//   struct file out = { 0 };
-
-//   struct Object     *address = NULL;
-//   struct ObjectName *names   = NULL;
-//   uint32_t           entries = 0;
-//   uint32_t           iter    = 0;
-
-//   char     buffer[1024];
-//   uint32_t size = 0;
-
-//   if (argc < 3)
-//   {
-//     printf("%s <filename> <output>", argv[0]);
-//     return 0;
-//   }
-
-//   file_open(&out, (uint8_t *)argv[2]);
-//   file_open(&in , (uint8_t *)argv[1]);
-//   filemap_create(&in);
-
-//   if (NULL == in.file ||
-//       NULL == in.memptr)
-//     goto cleanup;
-
-//   if (NULL == out.file)
-//     goto cleanup;
-
-//   entries = *((uint32_t *)(in.memptr));
-//   address = in.memptr + 4;
-//   names   = calloc(entries, sizeof(*names));
-
-//   if (names == 0)
-//     goto cleanup;
-
-//   get_names(names, in.memptr + 0x013AC82C + 0x04, entries);
-
-//   for (iter = 0; iter < entries; iter++)
-//   {
-//     size = sprintf(buffer, "0x%x - %s\n", address[iter].rva, names[iter].data);
-//     WriteFile(out.file, buffer, size, NULL, NULL);
-//   }
-  
-// cleanup:
-//   if (NULL != names)
-//     free(names);
-
-// q  if (NULL != in.file)
-//     file_close(&in);
-
-//   if (NULL != out.file)
-//     file_close(&out);
-
-//   return 0;
-// }
